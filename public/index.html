@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diseño 3D por Medidas</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Panel de controles -->
+    <aside id="panel">
+      <h1>🏠 Diseño por Medidas</h1>
+      <p class="hint">Modifica los valores y el modelo 3D se actualizará al instante.</p>
+
+      <label>
+        Largo (m)
+        <input type="number" id="largo" value="5" min="0.5" max="50" step="0.1" />
+      </label>
+
+      <label>
+        Ancho (m)
+        <input type="number" id="ancho" value="4" min="0.5" max="50" step="0.1" />
+      </label>
+
+      <label>
+        Alto (m)
+        <input type="number" id="alto" value="2.7" min="0.5" max="10" step="0.1" />
+      </label>
+
+      <label>
+        Color de pared
+        <input type="color" id="colorPared" value="#e8e0d5" />
+      </label>
+
+      <div class="info">
+        <strong>Área:</strong> <span id="area">20.00</span> m²<br />
+        <strong>Volumen:</strong> <span id="volumen">54.00</span> m³
+      </div>
+
+      <button id="guardar">💾 Guardar en servidor</button>
+      <p id="status" class="status"></p>
+    </aside>
+
+    <!-- Vista 3D -->
+    <main id="viewport"></main>
+  </div>
+
+  <!-- Three.js desde CDN (import map) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
