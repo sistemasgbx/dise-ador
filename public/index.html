@@ -3,45 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Diseño 3D por Medidas</title>
+  <title>Diseño de Caja Corrugada</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <aside id="panel">
-      <h1>🏠 Diseño por Medidas</h1>
-      <p class="hint">Modifica los valores y el modelo 3D se actualizará al instante.</p>
+      <h1>📦 Caja Corrugada (RSC)</h1>
+      <p class="hint">Dimensiones en milímetros (mm) o centímetros.</p>
 
       <label>
-        Largo (m)
-        <input type="number" id="largo" value="5" min="0.5" max="50" step="0.1" />
+        Largo (L) - Eje X
+        <input type="number" id="largo" value="40" min="10" max="200" step="1" />
       </label>
 
       <label>
-        Ancho (m)
-        <input type="number" id="ancho" value="4" min="0.5" max="50" step="0.1" />
+        Ancho (A) - Eje Y
+        <input type="number" id="ancho" value="30" min="10" max="200" step="1" />
       </label>
 
       <label>
-        Alto (m)
-        <input type="number" id="alto" value="2.7" min="0.5" max="10" step="0.1" />
+        Alto (H) - Eje Z
+        <input type="number" id="alto" value="20" min="10" max="200" step="1" />
       </label>
 
       <label>
-        Color de pared
-        <input type="color" id="colorPared" value="#e8e0d5" />
+        Pestaña / Ala (mm)
+        <input type="number" id="ala" value="10" min="1" max="50" step="1" />
       </label>
 
-      <div class="info">
-        <strong>Área:</strong> <span id="area">20.00</span> m²<br />
-        <strong>Volumen:</strong> <span id="volumen">54.00</span> m³
+      <div class="acciones">
+        <button id="btn-descargar" class="btn-secundario">⬇️ Descargar Plano (SVG)</button>
       </div>
-
-      <button id="guardar">💾 Guardar en servidor</button>
-      <p id="status" class="status"></p>
     </aside>
 
-    <main id="viewport"></main>
+    <main id="contenedor-vistas">
+      <!-- Vista 3D -->
+      <div id="viewport-3d"></div>
+      
+      <!-- Vista 2D (Plano Desdoblado) -->
+      <div id="viewport-2d">
+        <h2>Plano de Corte (Desdoblado)</h2>
+        <div id="svg-container"></div>
+      </div>
+    </main>
   </div>
 
   <script type="importmap">

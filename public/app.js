@@ -5,160 +5,236 @@ const inputs = {
   largo: document.getElementById('largo'),
   ancho: document.getElementById('ancho'),
   alto: document.getElementById('alto'),
-  colorPared: document.getElementById('colorPared')
+  ala: document.getElementById('ala')
 };
-const areaEl = document.getElementById('area');
-const volumenEl = document.getElementById('volumen');
-const statusEl = document.getElementById('status');
-const btnGuardar = document.getElementById('guardar');
-const viewport = document.getElementById('viewport');
+const viewport3D = document.getElementById('viewport-3d');
+const svgContainer = document.getElementById('svg-container');
+const btnDescargar = document.getElementById('btn-descargar');
 
-// Three.js Setup
+// ==========================================
+// 1. CONFIGURACIÓN THREE.JS (VISTA 3D)
+// ==========================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d15);
-const camera = new THREE.PerspectiveCamera(55, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
-camera.position.set(8, 6, 10);
+
+const camera = new THREE.PerspectiveCamera(45, viewport3D.clientWidth / viewport3D.clientHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+renderer.setSize(viewport3D.clientWidth, viewport3D.clientHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-viewport.appendChild(renderer.domElement);
+viewport3D.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.target.set(0, 1.3, 0);
 
 // Luces
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-dir.position.set(10, 15, 8);
+dir.position.set(50, 80, 40);
 dir.castShadow = true;
-dir.shadow.mapSize.set(1024, 1024);
 scene.add(dir);
 const fill = new THREE.DirectionalLight(0xa0c0ff, 0.4);
-fill.position.set(-8, 6, -6);
+fill.position.set(-50, 20, -40);
 scene.add(fill);
 
-// Grid y Grupo
-const grid = new THREE.GridHelper(40, 40, 0x2a2a40, 0x1a1a28);
-scene.add(grid);
-const habitacionGroup = new THREE.Group();
-scene.add(habitacionGroup);
+const cajaGroup = new THREE.Group();
+scene.add(cajaGroup);
 
-function construirHabitacion({ largo, ancho, alto, colorPared }) {
-  while (habitacionGroup.children.length > 0) {
-    const obj = habitacionGroup.children.pop();
+// Textura simple de cartón corrugado (color)
+const materialCarton = new THREE.MeshStandardMaterial({ 
+  color: 0xc19a6b, 
+  roughness: 0.8,
+  side: THREE.DoubleSide
+});
+
+// ==========================================
+// 2. LÓGICA DE DIBUJO (3D y 2D)
+// ==========================================
+
+function actualizarDiseno() {
+  const L = parseFloat(inputs.largo.value) || 1;
+  const A = parseFloat(inputs.ancho.value) || 1;
+  const H = parseFloat(inputs.alto.value) || 1;
+  const ala = parseFloat(inputs.ala.value) || 1;
+
+  dibujarCaja3D(L, A, H, ala);
+  dibujarPlano2D(L, A, H, ala);
+}
+
+// --- VISTA 3D (Caja Armada con pestañas) ---
+function dibujarCaja3D(L, A, H, ala) {
+  // Limpiar escena anterior
+  while (cajaGroup.children.length > 0) {
+    const obj = cajaGroup.children.pop();
     obj.geometry?.dispose?.();
-    obj.material?.dispose?.();
   }
 
-  const halfL = largo / 2;
-  const halfA = ancho / 2;
+  // Cuerpo de la caja (sin tapas)
+  const geo = new THREE.BoxGeometry(L, H, A);
+  const mesh = new THREE.Mesh(geo, materialCarton);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  
+  // Centrar la caja
+  mesh.position.y = H / 2;
+  cajaGroup.add(mesh);
 
-  // Piso
-  const pisoGeo = new THREE.BoxGeometry(largo, 0.05, ancho);
-  const pisoMat = new THREE.MeshStandardMaterial({ color: 0x6b5b4b, roughness: 0.9 });
-  const pisoMesh = new THREE.Mesh(pisoGeo, pisoMat);
-  pisoMesh.position.y = -0.025;
-  pisoMesh.receiveShadow = true;
-  habitacionGroup.add(pisoMesh);
+  // Pestañas superiores (aletas)
+  const grosorPestana = 0.2;
+  
+  // Pestaña Largo Superior 1
+  const pLargo = new THREE.Mesh(new THREE.BoxGeometry(L, grosorPestana, ala), materialCarton);
+  pLargo.position.set(0, H, A/2 + ala/2);
+  pLargo.rotation.x = -Math.PI / 2;
+  pLargo.castShadow = true;
+  cajaGroup.add(pLargo);
 
-  // Paredes
-  const paredMat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(colorPared), roughness: 0.85, side: THREE.DoubleSide
-  });
-  const grosor = 0.08;
-  const paredDefs = [
-    { pos: [0, alto / 2, -halfA], rotY: 0, w: largo, h: alto, d: grosor },
-    { pos: [0, alto / 2, halfA], rotY: 0, w: largo, h: alto, d: grosor },
-    { pos: [-halfL, alto / 2, 0], rotY: Math.PI / 2, w: ancho, h: alto, d: grosor },
-    { pos: [halfL, alto / 2, 0], rotY: Math.PI / 2, w: ancho, h: alto, d: grosor }
-  ];
+  // Pestaña Largo Superior 2
+  const pLargo2 = new THREE.Mesh(new THREE.BoxGeometry(L, grosorPestana, ala), materialCarton);
+  pLargo2.position.set(0, H, -A/2 - ala/2);
+  pLargo2.rotation.x = Math.PI / 2;
+  pLargo2.castShadow = true;
+  cajaGroup.add(pLargo2);
 
-  paredDefs.forEach((def) => {
-    const geo = new THREE.BoxGeometry(def.w, def.h, def.d);
-    const mesh = new THREE.Mesh(geo, paredMat.clone());
-    mesh.position.set(...def.pos);
-    mesh.rotation.y = def.rotY;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    habitacionGroup.add(mesh);
-  });
+  // Pestaña Ancho Superior 1
+  const pAncho = new THREE.Mesh(new THREE.BoxGeometry(ala, grosorPestana, A), materialCarton);
+  pAncho.position.set(L/2 + ala/2, H, 0);
+  pAncho.rotation.z = Math.PI / 2;
+  pAncho.castShadow = true;
+  cajaGroup.add(pAncho);
 
-  const maxDim = Math.max(largo, ancho, alto);
-  camera.position.set(maxDim * 1.4, maxDim * 1.1, maxDim * 1.7);
-  controls.target.set(0, alto / 2, 0);
+  // Pestaña Ancho Superior 2
+  const pAncho2 = new THREE.Mesh(new THREE.BoxGeometry(ala, grosorPestana, A), materialCarton);
+  pAncho2.position.set(-L/2 - ala/2, H, 0);
+  pAncho2.rotation.z = -Math.PI / 2;
+  pAncho2.castShadow = true;
+  cajaGroup.add(pAncho2);
+
+  // Cámara dinámica
+  const maxDim = Math.max(L, A, H) * 2.5;
+  camera.position.set(maxDim, maxDim, maxDim);
+  controls.target.set(0, H/2, 0);
   controls.update();
 }
 
-function leerMedidas() {
-  return {
-    largo: parseFloat(inputs.largo.value) || 1,
-    ancho: parseFloat(inputs.ancho.value) || 1,
-    alto: parseFloat(inputs.alto.value) || 1,
-    colorPared: inputs.colorPared.value
-  };
+// --- VISTA 2D (Plano de Corte Desdoblado / Dieline) ---
+function dibujarPlano2D(L, A, H, ala) {
+  // El desarrollo plano de una caja RSC tiene:
+  // Ancho total = 2 * L + 2 * A
+  // Alto total = H + 2 * ala (pestañas)
+  
+  const anchoTotal = (2 * L) + (2 * A);
+  const altoTotal = H + (2 * ala);
+  
+  // Escalar para que quepa en el div
+  const padding = 20;
+  const viewBox = `${-padding} ${-padding} ${anchoTotal + (padding*2)} ${altoTotal + (padding*2)}`;
+
+  // Empezamos a dibujar el SVG
+  // Colores: Rojo = Corte (Cuchilla), Azul = Doblez (Rule)
+  let svg = `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">`;
+  
+  // Estilos CSS para el SVG
+  svg += `
+    <style>
+      .corte { stroke: #e74c3c; stroke-width: 0.5; fill: none; }
+      .doblez { stroke: #3498db; stroke-width: 0.5; stroke-dasharray: 2, 2; fill: none; }
+      .texto { font-family: sans-serif; font-size: 3px; fill: #333; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+  `;
+
+  // Coordenadas iniciales
+  const x0 = 0;
+  const y0 = 0;
+
+  // 1. Contorno exterior de la caja (Líneas de corte)
+  // Empezamos por la pestaña superior izquierda
+  svg += `<polyline class="corte" points="
+    ${x0 + A},${y0} 
+    ${x0 + A + L},${y0} 
+    ${x0 + A + L},${y0 + ala} 
+    ${x0 + A + L + A},${y0 + ala} 
+    ${x0 + A + L + A},${y0} 
+    ${x0 + A + L + A + L},${y0} 
+    ${x0 + A + L + A + L},${y0 + ala} 
+    ${x0 + A + L + A + L + A},${y0 + ala} 
+    ${x0 + A + L + A + L + A},${y0 + ala + H} 
+    ${x0 + A + L + A + L},${y0 + ala + H} 
+    ${x0 + A + L + A + L},${y0 + ala + H + ala} 
+    ${x0 + A + L + A},${y0 + ala + H + ala} 
+    ${x0 + A + L + A},${y0 + ala + H} 
+    ${x0 + A + L},${y0 + ala + H} 
+    ${x0 + A + L},${y0 + ala + H + ala} 
+    ${x0 + A},${y0 + ala + H + ala} 
+    ${x0 + A},${y0 + ala + H} 
+    ${x0},${y0 + ala + H} 
+    ${x0},${y0 + ala} 
+    ${x0 + A},${y0 + ala} 
+    ${x0 + A},${y0} 
+  " />`;
+
+  // 2. Líneas de doblez verticales
+  svg += `<line class="doblez" x1="${x0 + A}" y1="${y0 + ala}" x2="${x0 + A}" y2="${y0 + ala + H}" />`;
+  svg += `<line class="doblez" x1="${x0 + A + L}" y1="${y0 + ala}" x2="${x0 + A + L}" y2="${y0 + ala + H}" />`;
+  svg += `<line class="doblez" x1="${x0 + A + L + A}" y1="${y0 + ala}" x2="${x0 + A + L + A}" y2="${y0 + ala + H}" />`;
+  svg += `<line class="doblez" x1="${x0 + A + L + A + L}" y1="${y0 + ala}" x2="${x0 + A + L + A + L}" y2="${y0 + ala + H}" />`;
+
+  // 3. Líneas de doblez horizontales (para las tapas)
+  svg += `<line class="doblez" x1="${x0 + A}" y1="${y0 + ala}" x2="${x0 + A + L}" y2="${y0 + ala}" />`; // Tapa arriba
+  svg += `<line class="doblez" x1="${x0 + A + L + A}" y1="${y0 + ala}" x2="${x0 + A + L + A + L}" y2="${y0 + ala}" />`; // Tapa arriba 2
+  svg += `<line class="doblez" x1="${x0 + A}" y1="${y0 + ala + H}" x2="${x0 + A + L}" y2="${y0 + ala + H}" />`; // Tapa abajo
+  svg += `<line class="doblez" x1="${x0 + A + L + A}" y1="${y0 + ala + H}" x2="${x0 + A + L + A + L}" y2="${y0 + ala + H}" />`; // Tapa abajo 2
+
+  // 4. Línea de unión (la pestaña que se pega)
+  svg += `<line class="doblez" x1="${x0}" y1="${y0 + ala}" x2="${x0}" y2="${y0 + ala + H}" />`;
+
+  // 5. Textos de referencia (Medidas)
+  svg += `<text class="texto" x="${x0 + A + L/2}" y="${y0 + ala/2}">L: ${L}</text>`;
+  svg += `<text class="texto" x="${x0 + A/2}" y="${y0 + ala + H/2}">A: ${A}</text>`;
+  
+  svg += `</svg>`;
+  svgContainer.innerHTML = svg;
 }
 
-function actualizarEscena() {
-  const medidas = leerMedidas();
-  construirHabitacion(medidas);
-  areaEl.textContent = (medidas.largo * medidas.ancho).toFixed(2);
-  volumenEl.textContent = (medidas.largo * medidas.ancho * medidas.alto).toFixed(2);
-}
+// ==========================================
+// 3. EVENTOS Y CONTROLES
+// ==========================================
 
-Object.values(inputs).forEach((input) => input.addEventListener('input', actualizarEscena));
-
-btnGuardar.addEventListener('click', async () => {
-  const medidas = leerMedidas();
-  statusEl.textContent = 'Guardando...';
-  statusEl.classList.remove('error');
-
-  try {
-    const res = await fetch('/api/habitacion', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(medidas)
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      statusEl.textContent = '❌ ' + (data.errores?.join(', ') || 'Error');
-      statusEl.classList.add('error');
-      return;
-    }
-    statusEl.textContent = '✅ Guardado correctamente';
-  } catch (err) {
-    statusEl.textContent = '❌ Error de conexión';
-    statusEl.classList.add('error');
-  }
+// Escuchar cambios en las medidas
+Object.values(inputs).forEach(input => {
+  input.addEventListener('input', actualizarDiseno);
 });
 
-async function cargarInicial() {
-  try {
-    const res = await fetch('/api/habitacion');
-    const data = await res.json();
-    inputs.largo.value = data.largo;
-    inputs.ancho.value = data.ancho;
-    inputs.alto.value = data.alto;
-    inputs.colorPared.value = data.colorPared;
-  } catch (e) {}
-  actualizarEscena();
-}
-
+// Redimensionar ventana
 window.addEventListener('resize', () => {
-  const w = viewport.clientWidth;
-  const h = viewport.clientHeight;
+  const w = viewport3D.clientWidth;
+  const h = viewport3D.clientHeight;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
 });
 
+// Bucle de animación 3D
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
 }
 
-cargarInicial();
+// Descargar SVG
+btnDescargar.addEventListener('click', () => {
+  const svgContent = svgContainer.innerHTML;
+  const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'plano_corte_caja.svg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// Iniciar
+actualizarDiseno();
 animate();
