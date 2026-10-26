@@ -1,15 +1,13 @@
 {
   "name": "medidas-3d",
   "version": "1.0.0",
-  "description": "Diseño 3D que se genera a partir de medidas en tiempo real",
+  "description": "Diseno 3D que se genera a partir de medidas",
   "main": "server.js",
-  "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2"
